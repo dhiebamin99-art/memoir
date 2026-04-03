@@ -24,7 +24,7 @@ from preprocessing   import preprocess, detect_outliers_iqr, detect_outliers_zsc
 from features        import build_features
 from augmentation    import augment_data
 from modeling        import (
-    predict_future_ca_2, train_and_evaluate, feature_importance,
+    train_and_evaluate, feature_importance,
     train_arima, train_prophet, train_lstm,
     compare_all_models,
     predict_ca_global, predict_future_ca,

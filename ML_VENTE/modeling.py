@@ -533,95 +533,95 @@ def predict_future_ca(model, df, n_mois=12):
     print(ca_mensuel.to_string(index=False))
     return ca_mensuel, ca_total
 
-def predict_future_ca_2(model, df, n_mois=1):
-    """CA futur = Somme( quantite_prevue(i) x prix_dernier(i) ) sur n_mois mois."""
-    from sklearn.preprocessing import LabelEncoder
-    print(f"\nPrevision CA futur — {n_mois} mois a venir...")
+# def predict_future_ca_2(model, df, n_mois=1):
+#     """CA futur = Somme( quantite_prevue(i) x prix_dernier(i) ) sur n_mois mois."""
+#     from sklearn.preprocessing import LabelEncoder
+#     print(f"\nPrevision CA futur — {n_mois} mois a venir...")
 
-    df = df.copy()
-    df["date_facture"] = pd.to_datetime(df["date_facture"])
-    derniere_date = df["date_facture"].max()
+#     df = df.copy()
+#     df["date_facture"] = pd.to_datetime(df["date_facture"])
+#     derniere_date = df["date_facture"].max()
 
-    if "prix_dernier" not in df.columns:
-        raise ValueError("Colonne 'prix_dernier' absente. Verifiez data_extraction.py")
+#     if "prix_dernier" not in df.columns:
+#         raise ValueError("Colonne 'prix_dernier' absente. Verifiez data_extraction.py")
 
-    prix_ref = (
-        df.groupby("article")["prix_dernier"].last()
-        .reset_index().rename(columns={"prix_dernier": "prix_ref"})
-    )
-    stats_article = (
-        df.groupby("article")
-        .agg(qte_moy_art=("quantite","mean"), qte_lag_1=("quantite","last"), qte_lag_7=("quantite","last"))
-        .reset_index().merge(prix_ref, on="article", how="left")
-    )
+#     prix_ref = (
+#         df.groupby("article")["prix_dernier"].last()
+#         .reset_index().rename(columns={"prix_dernier": "prix_ref"})
+#     )
+#     stats_article = (
+#         df.groupby("article")
+#         .agg(qte_moy_art=("quantite","mean"), qte_lag_1=("quantite","last"), qte_lag_7=("quantite","last"))
+#         .reset_index().merge(prix_ref, on="article", how="left")
+#     )
 
-    futures = []
-    for mois_offset in range(1, n_mois + 1):
-        future_date = derniere_date + pd.DateOffset(months=mois_offset)
-        for _, row in stats_article.iterrows():
-            qte_moy_mois = df[
-                (df["article"] == row["article"]) & (df["mois"] == future_date.month)
-            ]["quantite"].mean()
-            if pd.isna(qte_moy_mois):
-                qte_moy_mois = row["qte_moy_art"]
-            futures.append({
-                "date_facture"   : future_date,
-                "article"        : row["article"],   # gardé pour affichage
-                "mois"           : future_date.month,
-                "trimestre"      : future_date.quarter,
-                "annee"          : future_date.year,
-                "jour"           : 15,
-                "jour_semaine"   : future_date.dayofweek,
-                "qte_moy_article": row["qte_moy_art"],
-                "qte_moy_mois"   : qte_moy_mois,
-                "qte_lag_1"      : row["qte_lag_1"],
-                "qte_lag_7"      : row["qte_lag_7"],
-                "prix_dernier"   : row["prix_ref"],
-            })
+#     futures = []
+#     for mois_offset in range(1, n_mois + 1):
+#         future_date = derniere_date + pd.DateOffset(months=mois_offset)
+#         for _, row in stats_article.iterrows():
+#             qte_moy_mois = df[
+#                 (df["article"] == row["article"]) & (df["mois"] == future_date.month)
+#             ]["quantite"].mean()
+#             if pd.isna(qte_moy_mois):
+#                 qte_moy_mois = row["qte_moy_art"]
+#             futures.append({
+#                 "date_facture"   : future_date,
+#                 "article"        : row["article"],   # gardé pour affichage
+#                 "mois"           : future_date.month,
+#                 "trimestre"      : future_date.quarter,
+#                 "annee"          : future_date.year,
+#                 "jour"           : 15,
+#                 "jour_semaine"   : future_date.dayofweek,
+#                 "qte_moy_article": row["qte_moy_art"],
+#                 "qte_moy_mois"   : qte_moy_mois,
+#                 "qte_lag_1"      : row["qte_lag_1"],
+#                 "qte_lag_7"      : row["qte_lag_7"],
+#                 "prix_dernier"   : row["prix_ref"],
+#             })
 
-    df_future = pd.DataFrame(futures)
+#     df_future = pd.DataFrame(futures)
 
-    # ── Encoder article string → entier pour le modèle ───────
-    le = LabelEncoder()
-    le.fit(df["article"].astype(str))
-    df_future["article_nom"] = df_future["article"].astype(str)   # garder pour affichage
-    df_future["article"]     = df_future["article"].astype(str).map(
-        lambda x: le.transform([x])[0] if x in le.classes_ else 0
-    )
+#     # ── Encoder article string → entier pour le modèle ───────
+#     le = LabelEncoder()
+#     le.fit(df["article"].astype(str))
+#     df_future["article_nom"] = df_future["article"].astype(str)   # garder pour affichage
+#     df_future["article"]     = df_future["article"].astype(str).map(
+#         lambda x: le.transform([x])[0] if x in le.classes_ else 0
+#     )
 
-    # ── Prédiction ────────────────────────────────────────────
-    available = [f for f in FEATURES if f in df_future.columns]
-    df_future["quantite_prevue"] = model.predict(df_future[available].fillna(0)).clip(min=0)
-    df_future["ca_prevu"]        = df_future["quantite_prevue"] * df_future["prix_dernier"]
+#     # ── Prédiction ────────────────────────────────────────────
+#     available = [f for f in FEATURES if f in df_future.columns]
+#     df_future["quantite_prevue"] = model.predict(df_future[available].fillna(0)).clip(min=0)
+#     df_future["ca_prevu"]        = df_future["quantite_prevue"] * df_future["prix_dernier"]
 
-    # ── CA mensuel global ────────────────────────────────────
-    ca_mensuel = (
-        df_future.groupby(["annee","mois"])
-        .agg(ca_prevu_total=("ca_prevu","sum"), quantite_prevue=("quantite_prevue","sum"))
-        .reset_index().sort_values(["annee","mois"])
-    )
-    ca_total = df_future["ca_prevu"].sum()
-    print(f"\nCA Prevu sur {n_mois} mois : {ca_total:,.2f} DT")
-    print(ca_mensuel.to_string(index=False))
+#     # ── CA mensuel global ────────────────────────────────────
+#     ca_mensuel = (
+#         df_future.groupby(["annee","mois"])
+#         .agg(ca_prevu_total=("ca_prevu","sum"), quantite_prevue=("quantite_prevue","sum"))
+#         .reset_index().sort_values(["annee","mois"])
+#     )
+#     ca_total = df_future["ca_prevu"].sum()
+#     print(f"\nCA Prevu sur {n_mois} mois : {ca_total:,.2f} DT")
+#     print(ca_mensuel.to_string(index=False))
 
-    # ── Détail par article pour chaque mois ──────────────────
-    print(f"\n{'Annee':>6} {'Mois':>5}  {'Article':15s} {'Qte':>10} {'Prix':>10} {'CA (DT)':>14}")
-    print("-" * 65)
-    for (annee, mois), grp in df_future.groupby(["annee","mois"]):
-        detail = (
-            grp.groupby("article_nom")
-            .agg(qte=("quantite_prevue","sum"), prix=("prix_dernier","mean"), ca=("ca_prevu","sum"))
-            .reset_index()
-            .sort_values("ca", ascending=False)
-        )
-        for _, r in detail.iterrows():
-            print(f"{int(annee):>6} {int(mois):>5}  {r['article_nom']:15s} "
-                  f"{r['qte']:>10.0f} {r['prix']:>10.2f} {r['ca']:>14,.2f}")
-        sous_total = detail["ca"].sum()
-        print(f"{'':>6} {'':>5}  {'TOTAL MOIS':15s} {'':>10} {'':>10} {sous_total:>14,.2f}")
-        print("-" * 65)
+#     # ── Détail par article pour chaque mois ──────────────────
+#     print(f"\n{'Annee':>6} {'Mois':>5}  {'Article':15s} {'Qte':>10} {'Prix':>10} {'CA (DT)':>14}")
+#     print("-" * 65)
+#     for (annee, mois), grp in df_future.groupby(["annee","mois"]):
+#         detail = (
+#             grp.groupby("article_nom")
+#             .agg(qte=("quantite_prevue","sum"), prix=("prix_dernier","mean"), ca=("ca_prevu","sum"))
+#             .reset_index()
+#             .sort_values("ca", ascending=False)
+#         )
+#         for _, r in detail.iterrows():
+#             print(f"{int(annee):>6} {int(mois):>5}  {r['article_nom']:15s} "
+#                   f"{r['qte']:>10.0f} {r['prix']:>10.2f} {r['ca']:>14,.2f}")
+#         sous_total = detail["ca"].sum()
+#         print(f"{'':>6} {'':>5}  {'TOTAL MOIS':15s} {'':>10} {'':>10} {sous_total:>14,.2f}")
+#         print("-" * 65)
 
-    return ca_mensuel, ca_total
+#     return ca_mensuel, ca_total
 
 
 if __name__ == "__main__":
