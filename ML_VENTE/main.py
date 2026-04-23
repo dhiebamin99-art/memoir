@@ -90,17 +90,17 @@ def main():
 
     # ARIMA — sur la série agrégée (tous articles)
     print("\n--- ARIMA ---")
-    arima_res = train_arima(df_feat, article=None, n_test=30)
+    arima_res = train_arima(df_augmented, article=None, n_test=30)
 
     # Prophet — sur la série agrégée
     print("\n--- PROPHET ---")
-    prophet_res = train_prophet(df_feat, article=None, n_test=30)
+    prophet_res = train_prophet(df_augmented, article=None, n_test=30)
 
     # LSTM — sur la série agrégée
     # Conseil : filtrer sur un article fréquent pour un LSTM plus précis
     # ex : train_lstm(df_feat, article="ART001", n_steps=30, epochs=50)
     print("\n--- LSTM ---")
-    lstm_res = train_lstm(df_feat, article=None, n_steps=30, epochs=50, n_test=30)
+    lstm_res = train_lstm(df_augmented, article=None, n_steps=30, epochs=50, n_test=30)
 
     # ── 7. COMPARAISON GLOBALE ────────────────────────────────
     print("\n🏆 ÉTAPE 7 — Comparaison Globale Tous Modèles")
@@ -110,7 +110,7 @@ def main():
     # ── 8. PRÉVISION CA MENSUEL FUTUR ────────────────────────
     print("\n💰 ÉTAPE 8 — Prévision CA Mensuel (12 mois futurs)")
     # Utilise le meilleur modèle ML (Stacking) + dernier prix par article
-    ca_mensuel, ca_total = predict_future_ca(best_model, df_feat, n_mois=12)
+    ca_mensuel, ca_total = predict_future_ca(best_model, df_augmented, n_mois=12)
     plot_ca_global(ca_mensuel)
 
     # ── RÉSUMÉ FINAL ──────────────────────────────────────────
