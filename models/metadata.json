@@ -1,6 +1,6 @@
 {
   "model_type": "StackingRegressor",
-  "saved_at": "2026-04-27T15:47:48.523489",
+  "saved_at": "2026-04-28T09:32:05.362605",
   "features": [
     "jour",
     "annee",
@@ -14,9 +14,9 @@
     "trimestre"
   ],
   "metriques": {
-    "R²": 0.9054428202215066,
-    "MAE": 324.61124414203715,
-    "RMSE": 548.3311156706202
+    "R²": 0.8915058386433282,
+    "MAE": 342.18334224184986,
+    "RMSE": 582.5192274645539
   },
   "joblib_path": "models\\stacking_model.joblib"
 }

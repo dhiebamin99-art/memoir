@@ -62,12 +62,16 @@ pip install statsmodels prophet torch joblib openpyxl matplotlib scipy
 ```
 
 ---
+## SQL Query
+
+ML_VENTE/Config.py
+SQL_QUERY, BOMSQL, STOCKPFSQL et STOCKMPSQL
 
 ## Utilisation
 
 ### Pipeline complet (entraînement + planification)
 ```bash
-python main_stock.py
+python ML_VENTE/main_stock.py
 ```
 
 ### Rechargement rapide (modèle sauvegardé + nouveaux stocks)

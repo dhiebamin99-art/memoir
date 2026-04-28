@@ -5,7 +5,7 @@
 # Formules appliquées :
 #   1) Besoins PF    = Prévision mensuelle par article
 #   2) Achats PF     = max(0, Besoins PF - Stock actuel PF)
-#   3) Besoins MP    = Σ( Achats PF(i) × BOM_qty(i, composant) )
+#   3) Besoins MP    = sum( Achats PF(i) × BOM_qty(i, composant) )
 #   4) Achats MP brut= Besoins MP par composant
 #   5) Achats MP net = max(0, Achats MP brut - Stock actuel MP)
 #   6) Stock final PF= Stock actuel PF + Achats PF - Prévision
@@ -15,7 +15,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
-
+from config import BOMSQL, STOCKPFSQL, STOCKMPSQL
 
 # ════════════════════════════════════════════════════════════
 # EXTRACTION SQL — DONNÉES MÉTIER
@@ -26,15 +26,7 @@ def load_bom(conn) -> pd.DataFrame:
     Charge la nomenclature (Bill of Materials).
     Colonnes : Produit_fini | Composant | Quantite
     """
-    query = """
-    SELECT
-        B.ITMREF_0   AS Produit_fini,
-        D.CPNITMREF_0 AS Composant,
-        D.BOMQTY_0   AS Quantite
-    FROM GRMATEGS.BOM B
-    INNER JOIN GRMATEGS.BOMD D
-        ON B.ITMREF_0 = D.ITMREF_0
-    """
+    query = BOMSQL
     df = pd.read_sql(query, conn)
     print(f"✅ BOM chargée : {len(df)} lignes | "
           f"{df['Produit_fini'].nunique()} PF | "
@@ -47,17 +39,7 @@ def load_stock_pf(conn) -> pd.DataFrame:
     Charge le stock des produits finis.
     Colonnes : Article | Designation | Quantite_Stock
     """
-    query = """
-    SELECT
-        S.ITMREF_0   AS Article,
-        I.ITMDES1_0  AS Designation,
-        SUM(S.QTYPCU_0) AS Quantite_Stock
-    FROM [mateg].[GRMATEGS].STOCK S
-    JOIN [mateg].[GRMATEGS].ITMMASTER I ON S.ITMREF_0 = I.ITMREF_0
-    WHERE (I.TCLCOD_0 NOT IN ('ING','EMB','MTP','SPR'))
-    GROUP BY S.ITMREF_0, I.ITMDES1_0
-    ORDER BY S.ITMREF_0
-    """
+    query = STOCKPFSQL
     df = pd.read_sql(query, conn)
     df["Quantite_Stock"] = pd.to_numeric(df["Quantite_Stock"], errors="coerce").fillna(0)
     print(f"✅ Stock PF chargé : {len(df)} articles | total={df['Quantite_Stock'].sum():,.0f}")
@@ -69,17 +51,7 @@ def load_stock_mp(conn) -> pd.DataFrame:
     Charge le stock des matières premières.
     Colonnes : Article | Designation | Quantite_Stock
     """
-    query = """
-    SELECT
-        S.ITMREF_0   AS Article,
-        I.ITMDES1_0  AS Designation,
-        SUM(S.QTYPCU_0) AS Quantite_Stock
-    FROM [mateg].[GRMATEGS].STOCK S
-    JOIN [mateg].[GRMATEGS].ITMMASTER I ON S.ITMREF_0 = I.ITMREF_0
-    WHERE (I.TCLCOD_0 IN ('ING','EMB','MTP','SPR'))
-    GROUP BY S.ITMREF_0, I.ITMDES1_0
-    ORDER BY S.ITMREF_0
-    """
+    query = STOCKMPSQL
     df = pd.read_sql(query, conn)
     df["Quantite_Stock"] = pd.to_numeric(df["Quantite_Stock"], errors="coerce").fillna(0)
     print(f"✅ Stock MP chargé : {len(df)} articles | total={df['Quantite_Stock'].sum():,.0f}")

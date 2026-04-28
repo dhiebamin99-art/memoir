@@ -32,6 +32,40 @@ FROM [mateg].[GRMATEGS].[SINVOICED]
 ORDER BY INVDAT_0 DESC;
 """
 
+BOMSQL = """
+SELECT
+    B.ITMREF_0   AS Produit_fini,
+    D.CPNITMREF_0 AS Composant,
+    D.BOMQTY_0   AS Quantite
+FROM GRMATEGS.BOM B
+INNER JOIN GRMATEGS.BOMD D
+    ON B.ITMREF_0 = D.ITMREF_0
+"""
+
+STOCKPFSQL = """
+SELECT
+    S.ITMREF_0   AS Article,
+    I.ITMDES1_0  AS Designation,
+    SUM(S.QTYPCU_0) AS Quantite_Stock
+FROM [mateg].[GRMATEGS].STOCK S
+JOIN [mateg].[GRMATEGS].ITMMASTER I ON S.ITMREF_0 = I.ITMREF_0
+WHERE (I.TCLCOD_0 NOT IN ('ING','EMB','MTP','SPR'))
+GROUP BY S.ITMREF_0, I.ITMDES1_0
+ORDER BY S.ITMREF_0
+"""
+
+STOCKMPSQL = """
+SELECT
+    S.ITMREF_0   AS Article,
+    I.ITMDES1_0  AS Designation,
+    SUM(S.QTYPCU_0) AS Quantite_Stock
+FROM [mateg].[GRMATEGS].STOCK S
+JOIN [mateg].[GRMATEGS].ITMMASTER I ON S.ITMREF_0 = I.ITMREF_0
+WHERE (I.TCLCOD_0 IN ('ING','EMB','MTP','SPR'))
+GROUP BY S.ITMREF_0, I.ITMDES1_0
+ORDER BY S.ITMREF_0
+"""
+
 # --- Noms des colonnes après renommage ---
 COLUMN_NAMES = [
     "societe", "num_facture", "date_facture", "client", "representant",

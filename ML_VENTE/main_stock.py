@@ -201,20 +201,20 @@ def main():
     plot_feature_importance(importances_pre, "Importance des variables (avant augmentation)")
 
     # ── 4. DATA AUGMENTATION ─────────────────────────────────
-    print("\n" + "█" * 55)
-    print("  ÉTAPE 4 — Data Augmentation")
-    print("█" * 55)
-    df_augmented = augment_data(df_feat)
-    plot_augmentation(df_feat, df_augmented)
+    # print("\n" + "█" * 55)
+    # print("  ÉTAPE 4 — Data Augmentation")
+    # print("█" * 55)
+    # df_augmented = augment_data(df_feat)
+    # plot_augmentation(df_feat, df_augmented)
 
-    importances_post = feature_importance(df_augmented)
-    plot_feature_importance(importances_post, "Importance des variables (après augmentation)")
+    # importances_post = feature_importance(df_augmented)
+    # plot_feature_importance(importances_post, "Importance des variables (après augmentation)")
 
     # ── 5. MODÈLES ML CLASSIQUES ─────────────────────────────
     print("\n" + "█" * 55)
     print("  ÉTAPE 5 — Entraînement Modèles ML Classiques")
     print("█" * 55)
-    best_model, resultats_ml = train_and_evaluate(df_augmented)
+    best_model, resultats_ml = train_and_evaluate(df_feat)
     plot_model_comparison(resultats_ml)
 
     # ── 6. MODÈLES SÉRIES TEMPORELLES ────────────────────────
@@ -226,15 +226,15 @@ def main():
 
     if RUN_ARIMA:
         print("\n--- ARIMA ---")
-        arima_res = train_arima(df_augmented, article=None, n_test=30)
+        arima_res = train_arima(df_feat, article=None, n_test=30)
 
     if RUN_PROPHET:
         print("\n--- PROPHET ---")
-        prophet_res = train_prophet(df_augmented, article=None, n_test=30)
+        prophet_res = train_prophet(df_feat, article=None, n_test=30)
 
     if RUN_LSTM:
         print("\n--- LSTM (PyTorch) ---")
-        lstm_res = train_lstm(df_augmented, article=None,
+        lstm_res = train_lstm(df_feat, article=None,
                               n_steps=30, epochs=LSTM_EPOCHS, n_test=30)
 
     # ── 7. COMPARAISON GLOBALE ────────────────────────────────
@@ -252,7 +252,7 @@ def main():
     print("█" * 55)
 
     from config import FEATURES
-    features_used = [f for f in FEATURES if f in df_augmented.columns]
+    features_used = [f for f in FEATURES if f in df_feat.columns]
 
     # Métriques du meilleur modèle ML
     metriques_stacking = resultats_ml.get("Stacking", list(resultats_ml.values())[-1])
@@ -277,14 +277,14 @@ def main():
 
     # Prévision agrégée (affichage)
     ca_mensuel, ca_total = predict_future_ca(
-        best_model, df_augmented, n_mois=N_MOIS_PREVISION
+        best_model, df_feat, n_mois=N_MOIS_PREVISION
     )
     plot_ca_global(ca_mensuel)
 
     # Prévision détaillée par article (nécessaire pour BOM)
     print("\n  Calcul du détail par article pour la planification stocks...")
     ca_detail = _predict_future_ca_detail(
-        best_model, df_augmented, n_mois=N_MOIS_PREVISION
+        best_model, df_feat, n_mois=N_MOIS_PREVISION
     )
     print(f"  → {len(ca_detail)} lignes (article × mois)")
 
