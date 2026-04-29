@@ -40,30 +40,61 @@ SELECT
 FROM GRMATEGS.BOM B
 INNER JOIN GRMATEGS.BOMD D
     ON B.ITMREF_0 = D.ITMREF_0
+   AND B.BOMALT_0 = D.BOMALT_0
+   AND B.BOMTYPS_0 = D.BOMTYPS_0
+WHERE 
+    B.BOMSTA_0 = 1                    -- active BOM
+    AND (B.BOMDAT_0 <= GETDATE() OR B.BOMDAT_0 IS NULL)
+    AND (B.ENDDAT_0 >= GETDATE() OR B.ENDDAT_0 IS NULL)
+    AND D.CPNSTA_0 = 1                -- active component in BOM
+    AND D.BOMQTY_0 > 0;
 """
 
 STOCKPFSQL = """
-SELECT
-    S.ITMREF_0   AS Article,
-    I.ITMDES1_0  AS Designation,
+    SELECT
+    S.ITMREF_0      AS Article,
+    I.ITMDES1_0     AS Designation,
     SUM(S.QTYPCU_0) AS Quantite_Stock
 FROM [mateg].[GRMATEGS].STOCK S
 JOIN [mateg].[GRMATEGS].ITMMASTER I ON S.ITMREF_0 = I.ITMREF_0
-WHERE (I.TCLCOD_0 NOT IN ('ING','EMB','MTP','SPR'))
+WHERE 
+    I.ITMSTA_0 = 1                     -- actif
+    AND S.STOFCY_0 = @Site
+    AND S.PHYSTA_0 = 1                 -- mouvement physique
+    AND S.PHYF_0 = 0                   -- non figé
+    AND NOT EXISTS (                   -- n'est PAS un composant dans aucune BOM active
+        SELECT 1 FROM GRMATEGS.BOMD BD
+        JOIN GRMATEGS.BOM B ON B.ITMREF_0 = BD.ITMREF_0 AND B.BOMALT_0 = BD.BOMALT_0
+        WHERE BD.CPNITMREF_0 = I.ITMREF_0 AND B.BOMSTA_0 = 1
+    )
+    AND (
+        EXISTS (                       -- soit il a une BOM active (fabriqué)
+            SELECT 1 FROM GRMATEGS.BOM B2
+            WHERE B2.ITMREF_0 = I.ITMREF_0 AND B2.BOMSTA_0 = 1
+        )
+        OR EXISTS (                    -- soit il a des commandes clients
+            SELECT 1 FROM GRMATEGS.SORDERQ SQ
+            WHERE SQ.ITMREF_0 = I.ITMREF_0 AND SQ.SOHNUM_0 IS NOT NULL
+        )
+    )
 GROUP BY S.ITMREF_0, I.ITMDES1_0
-ORDER BY S.ITMREF_0
+ORDER BY S.ITMREF_0;
 """
 
 STOCKMPSQL = """
 SELECT
-    S.ITMREF_0   AS Article,
-    I.ITMDES1_0  AS Designation,
+    S.ITMREF_0      AS Article,
+    I.ITMDES1_0     AS Designation,
     SUM(S.QTYPCU_0) AS Quantite_Stock
 FROM [mateg].[GRMATEGS].STOCK S
 JOIN [mateg].[GRMATEGS].ITMMASTER I ON S.ITMREF_0 = I.ITMREF_0
-WHERE (I.TCLCOD_0 IN ('ING','EMB','MTP','SPR'))
+WHERE 
+    I.ITMSTA_0 = 1
+    AND S.STOFCY_0 = @Site
+    AND S.PHYSTA_0 = 1
+    AND S.PHYF_0 = 0
 GROUP BY S.ITMREF_0, I.ITMDES1_0
-ORDER BY S.ITMREF_0
+ORDER BY S.ITMREF_0;
 """
 
 # --- Noms des colonnes après renommage ---
